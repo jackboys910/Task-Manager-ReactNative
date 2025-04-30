@@ -1,11 +1,15 @@
+import { useEffect } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useColorScheme } from 'react-native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import * as Notifications from 'expo-notifications';
+import { useThemeStore } from '@/store/useThemeStore';
+import { darkTheme } from '@/constants/darkTheme';
+
 import 'react-native-reanimated';
+import Navbar from '@/components/Navbar';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -31,6 +35,26 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  useEffect(() => {
+    (async () => {
+      const existingPermissions = await Notifications.getPermissionsAsync();
+      if (!existingPermissions.granted) {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          alert('Permission for notifications is required!');
+        }
+      }
+    })();
+  }, []);
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+
   if (!loaded) {
     return null;
   }
@@ -39,13 +63,13 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { theme } = useThemeStore();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={theme === 'dark' ? darkTheme : DefaultTheme}>
+      <Navbar />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );
